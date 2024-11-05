@@ -1233,14 +1233,31 @@ struct NEON_64bit_GEMM_Int8Operands_LhsNonzero : KernelBase {
         // Reduce 32bit accumulators horizontally, second pass
         // (each pass adds pairwise. we need to add 4-wise),
         // and load destination values from memory.
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c0, %[dst_ptr]\n"
+        "ld1 {v12.16b}, [c0], %[dst_col_stride]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x0, %[dst_ptr]\n"
         "ld1 {v12.16b}, [x0], %[dst_col_stride]\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
         "addp v8.4s, v0.4s, v1.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v13.16b}, [c0], %[dst_col_stride]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v13.16b}, [x0], %[dst_col_stride]\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
         "addp v9.4s, v2.4s, v3.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v14.16b}, [c0], %[dst_col_stride]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v14.16b}, [x0], %[dst_col_stride]\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
         "addp v10.4s, v4.4s, v5.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v15.16b}, [c0]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v15.16b}, [x0]\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
         "addp v11.4s, v6.4s, v7.4s\n"
 
         // Add horizontally-reduced accumulators into
@@ -1253,11 +1270,19 @@ struct NEON_64bit_GEMM_Int8Operands_LhsNonzero : KernelBase {
         GEMMLOWP_LABEL_STORE
         ":\n"
         // Store back into memory
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c0, %[dst_ptr]\n"
+        "st1 {v12.16b}, [c0], %[dst_col_stride]\n"
+        "st1 {v13.16b}, [c0], %[dst_col_stride]\n"
+        "st1 {v14.16b}, [c0], %[dst_col_stride]\n"
+        "st1 {v15.16b}, [c0]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x0, %[dst_ptr]\n"
         "st1 {v12.16b}, [x0], %[dst_col_stride]\n"
         "st1 {v13.16b}, [x0], %[dst_col_stride]\n"
         "st1 {v14.16b}, [x0], %[dst_col_stride]\n"
         "st1 {v15.16b}, [x0]\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
         :  // outputs
         [lhs_ptr] "+r"(lhs_ptr), [rhs_ptr] "+r"(rhs_ptr),
         [dst_ptr] "+r"(dst_ptr), [run_depth] "+r"(run_depth),
